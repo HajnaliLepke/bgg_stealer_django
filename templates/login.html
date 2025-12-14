@@ -1,0 +1,130 @@
+{% extends "base_auth.html" %}
+{% block title %}GameKeep - {% if mode == "signup" %}Sign Up{% else %}Login{% endif %}{% endblock %}
+
+{% block body %}
+<div class="flex flex-1 pt-[60px]">
+  <!-- Left Column: Hero/Visuals -->
+  <div class="hidden lg:flex flex-1 relative bg-gray-900 overflow-hidden items-center justify-center">
+    <div class="absolute inset-0 z-0">
+      <img
+        class="w-full h-full object-cover opacity-60"
+        alt="Close up of colorful board game pieces and dice on a dark surface"
+        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1Q4MC9TJevbkfDoOoNQVkJU4UMwAmjbgrZ6lFi1QQvmq01N-fYuicPLFUrD9ccz7EM6GcCh_rVNyWwl2f03iFabSN79jWjfEc_z2FLj4sBLc7iXTXdHJXrVMuBMUPWfX8igCeH8jhXNSf1cXwKtXeg_uJaXkEWluA35ZzggzrPTnBuQ9OS2-2i1vuLcIxenV7qBeUYAx7tQuYUhqBqEXkaPdPfgQD-hRV4DKKDBzQUHx3G0VzCOmIR9Hb4G4t7yW7wPW3nU-6Fg"
+      />
+      <div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent"></div>
+    </div>
+
+    <div class="relative z-10 max-w-lg px-8">
+      <blockquote class="text-3xl font-bold text-white mb-6 leading-tight">
+        "The best collections are the ones that bring people together."
+      </blockquote>
+      <div class="flex flex-wrap gap-3">
+        <span class="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">Strategy</span>
+        <span class="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">Family</span>
+        <span class="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">Party</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Auth Form -->
+  <div class="flex flex-1 flex-col justify-center items-center p-4 sm:p-8 bg-background-light dark:bg-background-dark w-full max-w-full lg:max-w-[600px] border-l border-transparent dark:border-border-dark">
+    <div class="w-full max-w-[420px] flex flex-col gap-8">
+      <div class="flex flex-col gap-2">
+        <h1 class="text-gray-900 dark:text-white tracking-tight text-3xl font-bold leading-tight">
+          {% if mode == "signup" %}Create Account{% else %}Welcome Back{% endif %}
+        </h1>
+        <p class="text-gray-500 dark:text-text-secondary text-sm font-normal leading-normal">
+          Track your collection and discover your next game night favorite.
+        </p>
+      </div>
+
+      <!-- Segmented toggle -->
+      <div class="w-full p-1 bg-gray-200 dark:bg-border-dark rounded-xl">
+        <div class="relative flex w-full">
+          <a class="flex-1 text-center relative z-10" href="{% url 'login' %}">
+            <div class="w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200
+              {% if mode == 'login' %}
+                bg-white dark:bg-background-dark text-gray-900 dark:text-white shadow-sm
+              {% else %}
+                text-gray-500 dark:text-text-secondary
+              {% endif %}
+            ">
+              Log In
+            </div>
+          </a>
+          <a class="flex-1 text-center relative z-10" href="{% url 'signup' %}">
+            <div class="w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200
+              {% if mode == 'signup' %}
+                bg-white dark:bg-background-dark text-gray-900 dark:text-white shadow-sm
+              {% else %}
+                text-gray-500 dark:text-text-secondary
+              {% endif %}
+            ">
+              Sign Up
+            </div>
+          </a>
+        </div>
+      </div>
+
+      {% if error %}
+        <div class="rounded-lg border border-red-300 bg-red-50 text-red-800 px-4 py-3 text-sm dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <form class="flex flex-col gap-5" method="post" action="">
+        {% csrf_token %}
+
+        <!-- Email/Username -->
+        <label class="flex flex-col gap-2">
+          <span class="text-gray-900 dark:text-white text-sm font-medium">Email or Username</span>
+          <div class="relative">
+            <input
+              name="identifier"
+              class="w-full h-12 px-4 rounded-lg bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-input text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-text-secondary focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+              placeholder="Enter your email or username"
+              type="text"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </label>
+
+        <!-- Password -->
+        <label class="flex flex-col gap-2">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-900 dark:text-white text-sm font-medium">Password</span>
+            <span class="text-primary text-xs font-semibold opacity-60 select-none">Forgot?</span>
+          </div>
+
+          <div class="relative flex items-center">
+            <input
+              id="password"
+              name="password"
+              class="w-full h-12 pl-4 pr-12 rounded-lg bg-white dark:bg-surface-dark border border-gray-300 dark:border-border-input text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-text-secondary focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+              placeholder="Enter your password"
+              type="password"
+              autocomplete="{% if mode == 'signup' %}new-password{% else %}current-password{% endif %}"
+              required
+            />
+            <button
+              class="absolute right-0 h-full px-4 flex items-center justify-center text-gray-400 dark:text-text-secondary hover:text-gray-600 dark:hover:text-white"
+              type="button"
+              onclick="(function(){const p=document.getElementById('password'); p.type = p.type==='password' ? 'text' : 'password';})()"
+              aria-label="Toggle password visibility"
+            >
+              <span class="material-symbols-outlined text-[20px]">visibility</span>
+            </button>
+          </div>
+        </label>
+
+        <!-- Submit -->
+        <button class="mt-2 w-full h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg transition-colors shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+          <span>{% if mode == "signup" %}Sign Up{% else %}Log In{% endif %}</span>
+          <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
