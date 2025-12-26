@@ -64,8 +64,10 @@
     <form method="get" action="{% url 'wishlist' %}" class="flex gap-2 items-center">
       <input type="hidden" name="q" value="{{ q }}">
       <input type="hidden" name="kind" value="{{ kind }}">
+      <div class="w-full xl:max-w-[320px]">
+      <label class="text-xs font-medium text-[#637588] dark:text-[#92adc9]">Owner</label>
       <select name="owner"
-        class="h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
+        class="mt-1 w-full h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
         onchange="this.form.submit()"
       >
         <option value="">All owners</option>
@@ -73,8 +75,45 @@
             <option value="{{ o.slug }}" {% if o.slug == owner %}selected{% endif %}>{{ o.name }}</option>
           {% endfor %}
       </select>
-    </form>
+    </div>
+
+      <div class="w-full xl:max-w-[320px]">
+      <label class="text-xs font-medium text-[#637588] dark:text-[#92adc9]">Type</label>
+      <select name="kind"
+        class="mt-1 w-full h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
+        onchange="this.form.submit()"
+      >
+        <option value="">All types</option>
+          {% for k in kinds %}
+            <option value="{{ k.kind }}" {% if k.kind == kind %}selected{% endif %}>{{ k.kind }}</option>
+          {% endfor %}
+      </select>
+    </div>
+
+      <!-- User dropdown -->
+      <div class="w-full xl:max-w-[320px]">
+        <label class="text-xs font-medium text-[#637588] dark:text-[#92adc9]">User of wishlist</label>
+        <select
+        name="u"
+        class="mt-1 w-full h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
+        onchange="this.form.submit()"
+      >
+        {% for u in users %}
+        <option value="{{ u.username }}" {% if u.username == target_user.username %}selected{% endif %}>
+          {{ u.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+
   </div>
+  <br>
+  <div class="text-md text-[#637588] dark:text-[#92adc9]">
+    Viewing wishlist of <span class="font-semibold text-[#111418] dark:text-white">{{ target_user.username }}</span>
+  </div>
+  <br>
 
   <!-- Kanban Board -->
   <div class="overflow-x-auto pb-4">

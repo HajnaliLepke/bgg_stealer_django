@@ -9,7 +9,7 @@
 {% if page_obj.has_next %}
   <div
     hx-ext="intersect"
-    hx-get="{% url 'wishlist_bucket_chunk' bucket %}?page={{ page_obj.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if owner %}&owner={{ owner|urlencode }}{% endif %}{% if kind %}&kind={{ kind|urlencode }}{% endif %}"
+    hx-get="{% url 'wishlist_bucket_chunk' bucket %}?page={{ page_obj.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if owner %}&owner={{ owner|urlencode }}{% endif %}{% if kind %}&kind={{ kind|urlencode }}{% endif %}{% if target_user %}&u={{ target_user.username|urlencode }}{% endif %}"
     hx-trigger="intersect once"
     hx-swap="outerHTML"
     class="py-2 text-center text-xs text-[#637588] dark:text-[#92adc9]"

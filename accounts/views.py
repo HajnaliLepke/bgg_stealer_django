@@ -5,6 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.contrib.auth import get_user_model
+
 
 from .models import BoardGame, UserGameStatus, Owner
 
@@ -21,6 +23,7 @@ RED_BUCKETS = {
     "NOT_WANT_TO_PLAY_MORE",
 }
 
+User = get_user_model()
 
 def home(request):
     # send logged-in users to wishlist, otherwise to login
@@ -104,6 +107,15 @@ def _base_filtered_games(request):
 
     qs = BoardGame.objects.all()
 
+    # NEW: whose wishlist are we viewing?
+    u = (request.GET.get("u") or "").strip()
+
+    # default to current user
+    if not u:
+        target_user = request.user
+    else:
+        target_user = User.objects.filter(username=u).first() or request.user
+
     if owner:
         qs = qs.filter(owners__slug=owner)
 
@@ -123,7 +135,7 @@ def _base_filtered_games(request):
     # load owners efficiently for "Available at: ..."
     qs = qs.prefetch_related("owners")
 
-    return qs, q, owner, kind
+    return qs, q, owner, kind, target_user
 
 def _bucket_queryset(games_qs, user, bucket: str):
     """
@@ -150,9 +162,11 @@ def _bucket_accent(bucket: str) -> str:
 
 @login_required
 def wishlist_dashboard(request):
-    games_qs, q, owner, kind = _base_filtered_games(request)
+    games_qs, q, owner, kind, target_user = _base_filtered_games(request)
 
     owners = Owner.objects.order_by("name").all()
+    users = User.objects.filter(is_active=True).order_by("username")
+    kinds = BoardGame.objects.values("kind").distinct()
 
     buckets = [
         {"key": "NOT_TRIED", "label": "Not tried yet"},
@@ -170,7 +184,7 @@ def wishlist_dashboard(request):
 
     for bucket in buckets:
         key = bucket["key"]
-        qs = _bucket_queryset(games_qs, request.user, key).order_by("id")
+        qs = _bucket_queryset(games_qs, target_user, key).order_by("id")
         paginator = Paginator(qs, PAGE_SIZE)
         page = paginator.get_page(1)
         bucket["count"] = paginator.count
@@ -184,11 +198,15 @@ def wishlist_dashboard(request):
             "q": q,
             "owner": owner,
             "kind": kind,
+            "kinds":kinds,
             "owners": owners,
 
+            # NEW
+            "users": users,
+            "target_user": target_user,
+            "is_own_wishlist": (target_user.id == request.user.id),
+
             "buckets": buckets,
-            "bucket_pages": bucket_pages,
-            "bucket_counts": bucket_counts,
         },
     )
 
@@ -197,9 +215,9 @@ def wishlist_bucket_chunk(request, bucket: str):
     # bucket is "NOT_TRIED" or one of status values
     page_num = int(request.GET.get("page") or "1")
 
-    games_qs, q, owner, kind = _base_filtered_games(request)
+    games_qs, q, owner, kind, target_user = _base_filtered_games(request)
 
-    qs = _bucket_queryset(games_qs, request.user, bucket).order_by("id")
+    qs = _bucket_queryset(games_qs, target_user, bucket).order_by("id")
     paginator = Paginator(qs, PAGE_SIZE)
     page = paginator.get_page(page_num)
 
@@ -213,6 +231,11 @@ def wishlist_bucket_chunk(request, bucket: str):
             "q": q,
             "owner": owner,
             "kind": kind,
+
+            # NEW (so templates can keep u=... in URLs if needed)
+            "target_user": target_user,
+            "is_own_wishlist": (target_user.id == request.user.id),
+
         },
     )
 

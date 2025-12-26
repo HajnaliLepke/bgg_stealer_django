@@ -16,83 +16,86 @@
     {% endif %}
   </div>
 
+    
     <div class="flex flex-col gap-1">
-    <!-- Title area becomes the positioning context -->
-    <div class="relative">
-        <!-- Buttons overlayed over the title line -->
-        <div class="absolute top-0 right-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div class="flex items-center gap-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-sm p-1 ring-1 ring-black/5 dark:ring-white/10">
-            {# Want to try #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="WANT_TO_TRY">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to try">
-                <span class="material-symbols-outlined text-[20px]">emoji_objects</span>
-            </button>
-            </form>
+        <!-- Title area becomes the positioning context -->
+        <div class="relative">
+            <!-- Buttons overlayed over the title line -->
+            {% if is_own_wishlist %}  
+            <div class="absolute top-0 right-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-sm p-1 ring-1 ring-black/5 dark:ring-white/10">
+                    {# Want to try #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="WANT_TO_TRY">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to try">
+                        <span class="material-symbols-outlined text-[20px]">emoji_objects</span>
+                    </button>
+                    </form>
 
-            {# Want to play more #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="WANT_TO_PLAY_MORE">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to play more">
-                <span class="material-symbols-outlined text-[20px]">replay</span>
-            </button>
-            </form>
+                    {# Want to play more #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="WANT_TO_PLAY_MORE">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to play more">
+                        <span class="material-symbols-outlined text-[20px]">replay</span>
+                    </button>
+                    </form>
 
-            {# Want to buy #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="WANT_TO_BUY">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to buy">
-                <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
-            </button>
-            </form>
+                    {# Want to buy #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="WANT_TO_BUY">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to buy">
+                        <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                    </button>
+                    </form>
 
-            {# Bought #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="BOUGHT">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Bought">
-                <span class="material-symbols-outlined text-[20px]">check_circle</span>
-            </button>
-            </form>
+                    {# Bought #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="BOUGHT">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Bought">
+                        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                    </button>
+                    </form>
 
-            {# Not want to try #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="NOT_WANT_TO_TRY">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to try">
-                <span class="material-symbols-outlined text-[20px]">block</span>
-            </button>
-            </form>
+                    {# Not want to try #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="NOT_WANT_TO_TRY">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to try">
+                        <span class="material-symbols-outlined text-[20px]">block</span>
+                    </button>
+                    </form>
 
-            {# Not want to play more #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="NOT_WANT_TO_PLAY_MORE">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to play more">
-                <span class="material-symbols-outlined text-[20px]">thumb_down</span>
-            </button>
-            </form>
+                    {# Not want to play more #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="NOT_WANT_TO_PLAY_MORE">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to play more">
+                        <span class="material-symbols-outlined text-[20px]">thumb_down</span>
+                    </button>
+                    </form>
 
-            {# Clear #}
-            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="CLEAR">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10" title="Clear status">
-                <span class="material-symbols-outlined text-[20px]">undo</span>
-            </button>
-            </form>
-        </div>
-        </div>
+                    {# Clear #}
+                    <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="CLEAR">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10" title="Clear status">
+                        <span class="material-symbols-outlined text-[20px]">undo</span>
+                    </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
 
         <!-- Give the title right padding so it doesn't hide under the buttons -->
         <h3 class="text-lg font-bold leading-tight text-[#111418] dark:text-white w-full ">
