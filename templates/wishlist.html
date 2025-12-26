@@ -59,11 +59,32 @@
         </div>
       </label>
     </form>
-
-    <!-- Owner dropdown -->
+    
     <form method="get" action="{% url 'wishlist' %}" class="flex gap-2 items-center">
       <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="u" value="{{ u }}">
       <input type="hidden" name="kind" value="{{ kind }}">
+      {% comment %} <input type="hidden" name="players" value="{{ players }}"> {% endcomment %}
+
+
+
+    <div class="w-full xl:max-w-[200px]">
+      <label class="text-xs font-medium text-[#637588] dark:text-[#92adc9]">Players</label>
+      <select
+        name="players"
+        class="mt-1 w-full h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
+        onchange="this.form.submit()"
+      >
+        <option value="" {% if not players %}selected{% endif %}>Any</option>
+        {% for n in "123456789"|make_list %}
+          <option value="{{ n }}" {% if players == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+        <option value="10" {% if players == "10" %}selected{% endif %}>10+</option>
+      </select>
+    </div>
+
+
+    <!-- Owner dropdown -->
       <div class="w-full xl:max-w-[320px]">
       <label class="text-xs font-medium text-[#637588] dark:text-[#92adc9]">Owner</label>
       <select name="owner"
@@ -135,7 +156,7 @@
           </div>
 
           <div id="bucket-{{ b.key }}" class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-            {% include "partials/bucket_chunk.html" with bucket=b.key page_obj=b.page accent=b.accent q=q owner=owner kind=kind %}
+            {% include "partials/bucket_chunk.html" with bucket=b.key page_obj=b.page accent=b.accent q=q owner=owner kind=kind players=players %}
           </div>
         </div>
       {% endfor %}

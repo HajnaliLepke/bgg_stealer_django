@@ -92,18 +92,12 @@ def logout_view(request):
     return redirect("login")
 
 
-def attach_owner_list(qs):
-    # returns list of dicts so templates can do game.owner_list easily
-    out = []
-    for g in qs:
-        owners_csv = ", ".join(o.name for o in g.owners.all())
-        out.append({"game": g, "owners_csv": owners_csv})
-    return out
-
 def _base_filtered_games(request):
     q = (request.GET.get("q") or "").strip()
     owner = (request.GET.get("owner") or "").strip()
     kind = (request.GET.get("kind") or "").strip()
+    players_raw = (request.GET.get("players") or "").strip()
+    players = int(players_raw) if players_raw.isdigit() else None
 
     qs = BoardGame.objects.all()
 
@@ -121,6 +115,13 @@ def _base_filtered_games(request):
 
     if kind:
         qs = qs.filter(kind=kind)
+    
+    if players:
+        # "10" will represent "10+"
+        if players >= 10:
+            qs = qs.filter(max_players__gte=10)
+        else:
+            qs = qs.filter(min_players__lte=players, max_players__gte=players)
 
     if q:
         qs = qs.filter(
@@ -135,7 +136,7 @@ def _base_filtered_games(request):
     # load owners efficiently for "Available at: ..."
     qs = qs.prefetch_related("owners")
 
-    return qs, q, owner, kind, target_user
+    return qs, q, owner, kind, target_user, players_raw
 
 def _bucket_queryset(games_qs, user, bucket: str):
     """
@@ -162,7 +163,7 @@ def _bucket_accent(bucket: str) -> str:
 
 @login_required
 def wishlist_dashboard(request):
-    games_qs, q, owner, kind, target_user = _base_filtered_games(request)
+    games_qs, q, owner, kind, target_user, players = _base_filtered_games(request)
 
     owners = Owner.objects.order_by("name").all()
     users = User.objects.filter(is_active=True).order_by("username")
@@ -174,13 +175,10 @@ def wishlist_dashboard(request):
         {"key": "WANT_TO_PLAY_MORE", "label": "Want to play more"},
         {"key": "WANT_TO_BUY", "label": "Want to buy"},
         {"key": "BOUGHT", "label": "Bought"},
-        {"key": "NOT_WANT_TO_TRY", "label": "Not want to try"},
-        {"key": "NOT_WANT_TO_PLAY_MORE", "label": "Not want to play more"},
+        {"key": "NOT_WANT_TO_TRY", "label": "Don't want to try"},
+        {"key": "NOT_WANT_TO_PLAY_MORE", "label": "Don't want to play more"},
     ]
 
-    # Initial page for each column
-    bucket_pages = {}
-    bucket_counts = {}
 
     for bucket in buckets:
         key = bucket["key"]
@@ -200,6 +198,7 @@ def wishlist_dashboard(request):
             "kind": kind,
             "kinds":kinds,
             "owners": owners,
+            "players": players,
 
             # NEW
             "users": users,
@@ -215,7 +214,7 @@ def wishlist_bucket_chunk(request, bucket: str):
     # bucket is "NOT_TRIED" or one of status values
     page_num = int(request.GET.get("page") or "1")
 
-    games_qs, q, owner, kind, target_user = _base_filtered_games(request)
+    games_qs, q, owner, kind, target_user, players = _base_filtered_games(request)
 
     qs = _bucket_queryset(games_qs, target_user, bucket).order_by("id")
     paginator = Paginator(qs, PAGE_SIZE)
@@ -231,6 +230,7 @@ def wishlist_bucket_chunk(request, bucket: str):
             "q": q,
             "owner": owner,
             "kind": kind,
+            "players":players,
 
             # NEW (so templates can keep u=... in URLs if needed)
             "target_user": target_user,
