@@ -2,7 +2,6 @@
 {% block title %}Wishlist Dashboard{% endblock %}
 
 {% block body %}
-<!-- Top Navigation Bar -->
 <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[#e5e7eb] dark:border-[#233648] bg-white dark:bg-[#111a22] px-6 lg:px-10 py-3">
   <div class="flex items-center gap-4">
     <div class="size-8 text-primary">
@@ -10,9 +9,7 @@
         <g clip-path="url(#clip0_6_535)">
           <path clip-rule="evenodd" d="M47.2426 24L24 47.2426L0.757355 24L24 0.757355L47.2426 24ZM12.2426 21H35.7574L24 9.24264L12.2426 21Z" fill="currentColor" fill-rule="evenodd"></path>
         </g>
-        <defs>
-          <clipPath id="clip0_6_535"><rect fill="white" height="48" width="48"></rect></clipPath>
-        </defs>
+        <defs><clipPath id="clip0_6_535"><rect fill="white" height="48" width="48"></rect></clipPath></defs>
       </svg>
     </div>
     <h2 class="text-lg font-bold leading-tight tracking-[-0.015em] hidden sm:block">GameKeep</h2>
@@ -42,63 +39,56 @@
   </div>
 </header>
 
-<!-- Main Content -->
 <main class="flex-1 px-4 md:px-10 lg:px-20 py-6 max-w-[1600px] mx-auto w-full">
-  <!-- Controls & Filters Toolbar -->
-  <div class="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center mb-8">
-    <!-- Search -->
-    <div class="w-full xl:max-w-[480px]">
-      <form method="get" action="{% url 'wishlist' %}">
-        <label class="flex flex-col h-12 w-full">
-          <div class="flex w-full flex-1 items-stretch rounded-lg h-full shadow-sm">
-            <div class="text-[#637588] dark:text-[#92adc9] flex border-none bg-white dark:bg-[#233648] items-center justify-center pl-4 rounded-l-lg border-r-0">
-              <span class="material-symbols-outlined text-[24px]">search</span>
-            </div>
-            <input
-              name="q"
-              value="{{ q }}"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-[#111418] dark:text-white focus:outline-0 focus:ring-0 border-none bg-white dark:bg-[#233648] focus:border-none h-full placeholder:text-[#637588] dark:placeholder:text-[#92adc9] px-4 pl-2 text-base font-normal leading-normal"
-              placeholder="Search boardgames by title, publisher..."
-            />
-          </div>
-        </label>
-      </form>
-    </div>
+  <!-- Filters -->
+  <div class="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center mb-8">
 
-    <!-- Chips (static for now, just visual) -->
-    <div class="flex flex-wrap items-center gap-4 w-full xl:w-auto justify-between xl:justify-end">
-      <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-2 xl:pb-0">
-        <button type="button" class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary text-white px-4 transition-colors">
-          <p class="text-sm font-bold leading-normal">All Games</p>
-        </button>
-        <button type="button" class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-[#233648] hover:bg-gray-100 dark:hover:bg-[#2f465c] text-[#111418] dark:text-white px-4 transition-colors">
-          <p class="text-sm font-medium leading-normal">Standalone</p>
-        </button>
-        <button type="button" class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-[#233648] hover:bg-gray-100 dark:hover:bg-[#2f465c] text-[#111418] dark:text-white px-4 transition-colors">
-          <p class="text-sm font-medium leading-normal">Expansions</p>
-        </button>
-      </div>
-    </div>
+    <!-- Search -->
+    <form method="get" action="{% url 'wishlist' %}" class="w-full xl:max-w-[560px]">
+      <input type="hidden" name="owner" value="{{ owner }}">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <label class="flex flex-col h-12 w-full">
+        <div class="flex w-full flex-1 items-stretch rounded-lg h-full shadow-sm">
+          <div class="text-[#637588] dark:text-[#92adc9] flex border-none bg-white dark:bg-[#233648] items-center justify-center pl-4 rounded-l-lg border-r-0">
+            <span class="material-symbols-outlined text-[24px]">search</span>
+          </div>
+          <input name="q" value="{{ q }}"
+            class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-[#111418] dark:text-white focus:outline-0 focus:ring-0 border-none bg-white dark:bg-[#233648] focus:border-none h-full placeholder:text-[#637588] dark:placeholder:text-[#92adc9] px-4 pl-2 text-base font-normal leading-normal"
+            placeholder="Search boardgames by title, local title, version..."
+          />
+        </div>
+      </label>
+    </form>
+
+    <!-- Owner dropdown -->
+    <form method="get" action="{% url 'wishlist' %}" class="flex gap-2 items-center">
+      <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <select name="owner"
+        class="h-12 rounded-lg bg-white dark:bg-[#233648] border-none text-[#111418] dark:text-white px-4 shadow-sm"
+        onchange="this.form.submit()"
+      >
+        <option value="">All owners</option>
+        {% for o in owners %}
+          <option value="{{ o }}" {% if o == owner %}selected{% endif %}>{{ o }}</option>
+        {% endfor %}
+      </select>
+    </form>
   </div>
 
-  <!-- Kanban Board Columns -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full items-start">
-
-    <!-- Column 1: Not Tried Yet -->
+  <!-- Kanban Board -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <!-- Not Tried -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between px-1">
-        <h2 class="text-[#111418] dark:text-white text-[22px] font-bold leading-tight">
+        <h2 class="text-[22px] font-bold leading-tight">
           Not Tried Yet <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ not_tried|length }})</span>
         </h2>
-        <button type="button" class="text-[#637588] dark:text-[#92adc9] hover:text-primary">
-          <span class="material-symbols-outlined">more_horiz</span>
-        </button>
       </div>
-
       <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-        {% for item in not_tried %}
-          {% include "wishlist_card.html" with item=item accent="primary" %}
-        {% empty %}
+          {% for row in not_tried %}
+            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="primary" q=q owner=owner kind=kind %}
+          {% empty %}
           <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
             No items here yet.
           </div>
@@ -106,22 +96,18 @@
       </div>
     </div>
 
-    <!-- Column 2: Positive -->
+    <!-- Positive -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between px-1">
-        <h2 class="text-[#111418] dark:text-white text-[22px] font-bold leading-tight flex items-center gap-2">
+        <h2 class="text-[22px] font-bold leading-tight flex items-center gap-2">
           <span class="w-2 h-6 rounded-full bg-green-500 block"></span>
           Positive <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ positive|length }})</span>
         </h2>
-        <button type="button" class="text-[#637588] dark:text-[#92adc9] hover:text-primary">
-          <span class="material-symbols-outlined">more_horiz</span>
-        </button>
       </div>
-
       <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-        {% for item in positive %}
-          {% include "wishlist_card.html" with item=item accent="green" %}
-        {% empty %}
+          {% for row in positive %}
+            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="green" q=q owner=owner kind=kind %}
+          {% empty %}
           <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
             No items here yet.
           </div>
@@ -129,29 +115,24 @@
       </div>
     </div>
 
-    <!-- Column 3: Negative -->
+    <!-- Negative -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between px-1">
-        <h2 class="text-[#111418] dark:text-white text-[22px] font-bold leading-tight flex items-center gap-2">
+        <h2 class="text-[22px] font-bold leading-tight flex items-center gap-2">
           <span class="w-2 h-6 rounded-full bg-red-500 block"></span>
           Negative <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ negative|length }})</span>
         </h2>
-        <button type="button" class="text-[#637588] dark:text-[#92adc9] hover:text-primary">
-          <span class="material-symbols-outlined">more_horiz</span>
-        </button>
       </div>
-
       <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-        {% for item in negative %}
-          {% include "wishlist_card.html" with item=item accent="red" %}
-        {% empty %}
+          {% for row in negative %}
+            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="red" q=q owner=owner kind=kind %}
+          {% empty %}
           <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
             No items here yet.
           </div>
         {% endfor %}
       </div>
     </div>
-
   </div>
 </main>
 {% endblock %}

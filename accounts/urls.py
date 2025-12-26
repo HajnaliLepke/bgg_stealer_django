@@ -8,5 +8,5 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
 
     path("wishlist/", views.wishlist_dashboard, name="wishlist"),
-    path("wishlist/<int:pk>/set-status/", views.set_wishlist_status, name="wishlist_set_status"),
+    path("wishlist/<int:game_id>/set-status/", views.set_game_status, name="wishlist_set_status"),
 ]

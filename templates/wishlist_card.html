@@ -2,139 +2,119 @@
   {% if accent == 'green' %}hover:border-green-500/50{% elif accent == 'red' %}hover:border-red-500/50{% else %}hover:border-primary/50{% endif %}
   transition-all cursor-pointer"
 >
-    <div class="relative w-full aspect-[16/9] overflow-hidden rounded-lg">
-        {% if item.image_url %}
-            <img alt="{{ item.title }}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="{{ item.image_url }}"/>
-        {% else %}
-            <div class="w-full h-full bg-[#e5e7eb] dark:bg-[#2f465c]"></div>
-        {% endif %}
+  <div class="relative w-full aspect-[16/9] overflow-hidden rounded-lg bg-[#e5e7eb] dark:bg-[#2f465c]">
+    {% if game.image_url %}
+      <img alt="{{ game.title }}" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.02]" src="{{ game.image_url }}"/>
+    {% endif %}
 
-        {% if item.year %}
-            <div class="absolute top-2 right-2">
-                <span class="inline-flex items-center rounded-md bg-black/60 backdrop-blur-sm px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">
-                    {{ item.year }}
-                </span>
+    {% if game.year %}
+      <div class="absolute top-2 right-2">
+        <span class="inline-flex items-center rounded-md bg-black/60 backdrop-blur-sm px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">
+          {{ game.year }}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <div class="flex justify-between items-start gap-2">
+      <div class="min-w-0">
+        <h3 class="text-lg font-bold leading-tight text-[#111418] dark:text-white truncate">
+          {{ game.title_local|default:game.title }}
+        </h3>
+        <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1 flex flex-wrap gap-x-2 gap-y-1">
+          {% comment %} <span class="inline-flex items-center gap-1"> {% endcomment %}
+            {% if owners_csv %}
+            <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1">
+                Available at: {{ owners_csv }}
             </div>
-        {% endif %}
-    </div>
-
-    <div class="flex flex-wrap items-center gap-2 mt-1">
-        {# Kind badge #}
-        {% if item.kind == "EXPANSION" %}
-            <span class="inline-flex items-center rounded-md bg-blue-900/40 border border-blue-500/30 px-2 py-1 text-xs font-medium text-blue-200">Expansion</span>
-        {% else %}
-            <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">Standalone</span>
-        {% endif %}
-
-        {# Players badge #}
-        {% if item.min_players or item.max_players %}
-            <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
-            <span class="material-symbols-outlined text-[14px] mr-1">groups</span>
-                {% if item.min_players and item.max_players %}
-                    {{ item.min_players }}–{{ item.max_players }}
-                {% elif item.min_players %}
-                    {{ item.min_players }}+
-                {% else %}
-                    up to {{ item.max_players }}
-                {% endif %}
-            </span>
-        {% endif %}
-
-        {# Play time badge (minutes) #}
-        {% if item.min_playing_time or item.max_playing_time %}
-            <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
-            <span class="material-symbols-outlined text-[14px] mr-1">schedule</span>
-                {% if item.min_playing_time and item.max_playing_time %}
-                    {{ item.min_playing_time }}–{{ item.max_playing_time }}m
-                {% elif item.min_playing_time %}
-                    {{ item.min_playing_time }}m+
-                {% else %}
-                    up to {{ item.max_playing_time }}m
-                {% endif %}
-            </span>
-        {% endif %}
-
-        {# Weight #}
-        {% if item.weight %}
-            <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
-            <span class="material-symbols-outlined text-[14px] mr-1">balance</span>
-                {{ item.weight }}
-            </span>
-        {% endif %}
-
-        {# Rank #}
-        {% if item.rank %}
-            <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
-            <span class="material-symbols-outlined text-[14px] mr-1">leaderboard</span>
-                #{{ item.rank }}
-            </span>
-        {% endif %}
-
-        {# Rating (if you still keep it) #}
-        {% if item.rating %}
-            <span class="flex items-center text-xs text-[#637588] dark:text-[#92adc9]">
-            <span class="material-symbols-outlined text-[14px] mr-1 text-yellow-500">star</span>
-                {{ item.rating }}
-            </span>
-        {% endif %}
-    </div>
-
-
-    {% comment %} <div class="flex flex-col gap-1">
-        <div class="flex justify-between items-start">
-            <h3 class="text-lg font-bold leading-tight text-[#111418] dark:text-white">{{ item.title }}</h3>
-
-            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <!-- Move to Positive -->
-                <form method="post" action="{% url 'wishlist_set_status' item.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="POSITIVE">
-                    <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
-                    <button type="submit"
-                        class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20"
-                        title="Mark Positive">
-                        <span class="material-symbols-outlined text-[20px]">thumb_up</span>
-                    </button>
-                </form>
-
-                <!-- Move to Negative -->
-                <form method="post" action="{% url 'wishlist_set_status' item.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="NEGATIVE">
-                    <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
-                    <button type="submit"
-                        class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20"
-                        title="Mark Negative">
-                        <span class="material-symbols-outlined text-[20px]">thumb_down</span>
-                    </button>
-                </form>
-
-                <!-- Move back to Not Tried -->
-                <form method="post" action="{% url 'wishlist_set_status' item.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="NOT_TRIED">
-                    <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
-                    <button type="submit"
-                        class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10"
-                        title="Move back to Not Tried">
-                        <span class="material-symbols-outlined text-[20px]">undo</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2 mt-1">
-            {% if item.kind == "EXPANSION" %}
-                <span class="inline-flex items-center rounded-md bg-blue-900/40 border border-blue-500/30 px-2 py-1 text-xs font-medium text-blue-200">Expansion</span>
-            {% else %}
-                <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">Standalone</span>
             {% endif %}
 
-            {% if item.rating %}
-                <span class="flex items-center text-xs text-[#637588] dark:text-[#92adc9]">
-                    <span class="material-symbols-outlined text-[14px] mr-1 text-yellow-500">star</span> {{ item.rating }}
-                </span>
-            {% endif %}
+          {% comment %} </span> {% endcomment %}
+          {% if game.version_nickname %}
+            <span class="inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">sell</span>{{ game.version_nickname }}
+            </span>
+          {% endif %}
+          {% if game.objectid %}
+            <span class="inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">tag</span>BGG {{ game.objectid }}
+            </span>
+          {% endif %}
         </div>
-    </div> {% endcomment %}
+      </div>
+
+      <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
+        <!-- Positive -->
+        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="POSITIVE">
+          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
+          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Mark Positive">
+            <span class="material-symbols-outlined text-[20px]">thumb_up</span>
+          </button>
+        </form>
+
+        <!-- Negative -->
+        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="NEGATIVE">
+          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
+          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Mark Negative">
+            <span class="material-symbols-outlined text-[20px]">thumb_down</span>
+          </button>
+        </form>
+
+        <!-- Undo / back to Not Tried -->
+        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="NOT_TRIED">
+          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
+          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10" title="Move back to Not Tried">
+            <span class="material-symbols-outlined text-[20px]">undo</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 mt-2">
+      {% if game.kind == "EXPANSION" %}
+        <span class="inline-flex items-center rounded-md bg-blue-900/40 border border-blue-500/30 px-2 py-1 text-xs font-medium text-blue-200">Expansion</span>
+      {% elif game.kind == "STANDALONE" %}
+        <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">Standalone</span>
+      {% endif %}
+
+      {% if game.min_players or game.max_players %}
+        <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
+          <span class="material-symbols-outlined text-[14px] mr-1">groups</span>
+          {% if game.min_players and game.max_players %}{{ game.min_players }}–{{ game.max_players }}{% elif game.min_players %}{{ game.min_players }}+{% else %}up to {{ game.max_players }}{% endif %}
+        </span>
+      {% endif %}
+
+      {% if game.min_playing_time or game.max_playing_time %}
+        <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
+          <span class="material-symbols-outlined text-[14px] mr-1">schedule</span>
+          {% if game.min_playing_time and game.max_playing_time %}{{ game.min_playing_time }}–{{ game.max_playing_time }}m{% elif game.min_playing_time %}{{ game.min_playing_time }}m+{% else %}up to {{ game.max_playing_time }}m{% endif %}
+        </span>
+      {% endif %}
+
+      {% if game.weight %}
+        <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
+          <span class="material-symbols-outlined text-[14px] mr-1">balance</span>{{ game.weight }}
+        </span>
+      {% endif %}
+
+      {% if game.rank %}
+        <span class="inline-flex items-center rounded-md bg-[#e3e8ef] dark:bg-[#34485c] px-2 py-1 text-xs font-medium text-[#111418] dark:text-[#d0dbe7]">
+          <span class="material-symbols-outlined text-[14px] mr-1">leaderboard</span>#{{ game.rank }}
+        </span>
+      {% endif %}
+
+      {% if game.rating %}
+        <span class="flex items-center text-xs text-[#637588] dark:text-[#92adc9]">
+          <span class="material-symbols-outlined text-[14px] mr-1 text-yellow-500">star</span>{{ game.rating }}
+        </span>
+      {% endif %}
+    </div>
+  </div>
 </div>
