@@ -125,3 +125,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "wishlist"
 LOGOUT_REDIRECT_URL = "login"
+
+# Source - https://stackoverflow.com/a
+# Posted by Prakhar Trivedi, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-12-26, License - CC BY-SA 4.0
+
+ALLOWED_HOSTS = ['vadsuhanc.pythonanywhere.com', 'localhost', '127.0.0.1']
