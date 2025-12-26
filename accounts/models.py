@@ -78,15 +78,22 @@ class OwnerInventory(models.Model):
 
 class UserGameStatus(models.Model):
     class Status(models.TextChoices):
-        POSITIVE = "POSITIVE", "Positive"
-        NEGATIVE = "NEGATIVE", "Negative"
+        WANT_TO_TRY = "WANT_TO_TRY", "Want to try"
+        WANT_TO_PLAY_MORE = "WANT_TO_PLAY_MORE", "Want to play more"
+        WANT_TO_BUY = "WANT_TO_BUY", "Want to buy"
+        BOUGHT = "BOUGHT", "Bought"
+        NOT_WANT_TO_TRY = "NOT_WANT_TO_TRY", "Not want to try"
+        NOT_WANT_TO_PLAY_MORE = "NOT_WANT_TO_PLAY_MORE", "Not want to play more"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_statuses")
     game = models.ForeignKey(BoardGame, on_delete=models.CASCADE, related_name="user_statuses")
-    status = models.CharField(max_length=10, choices=Status.choices)
+    status = models.CharField(max_length=30, choices=Status.choices)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["user", "game"], name="uniq_user_game_status"),
         ]
+
+    def __str__(self) -> str:
+        return f"{self.user} -> {self.game} = {self.status}"

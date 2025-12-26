@@ -77,56 +77,31 @@
   </div>
 
   <!-- Kanban Board -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-    <!-- Not Tried -->
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-[22px] font-bold leading-tight">
-          Not Tried Yet <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ not_tried_page.paginator.count }})</span>
-        </h2>
-      </div>
-      <div id="not-tried-list"  class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-            {% include "partials/not_tried_chunk.html" with not_tried_page=not_tried_page not_tried_has_next=not_tried_has_next not_tried_next_page=not_tried_next_page q=q owner=owner kind=kind %}
-      </div>
-    </div>
-
-    <!-- Positive -->
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-[22px] font-bold leading-tight flex items-center gap-2">
-          <span class="w-2 h-6 rounded-full bg-green-500 block"></span>
-          Positive <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ positive|length }})</span>
-        </h2>
-      </div>
-      <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-          {% for game in positive %}
-            {% include "wishlist_card.html" with game=game accent="green" q=q owner=owner kind=kind %}
-          {% empty %}
-          <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
-            No items here yet.
+  <div class="overflow-x-auto pb-4">
+    <div class="flex gap-6 min-w-max items-start">
+      {% for b in buckets %}
+        <div class="w-[360px] shrink-0 flex flex-col gap-4">
+          <div class="flex items-center justify-between px-1">
+            <h2 class="text-[22px] font-bold leading-tight flex items-center gap-2">
+              {% if b.key == "WANT_TO_TRY" or b.key == "WANT_TO_PLAY_MORE" or b.key == "WANT_TO_BUY" %}
+                <span class="w-2 h-6 rounded-full bg-green-500 block"></span>
+              {% elif b.key == "NOT_WANT_TO_TRY" or b.key == "NOT_WANT_TO_PLAY_MORE" %}
+                <span class="w-2 h-6 rounded-full bg-red-500 block"></span>
+              {% endif %}
+              {{ b.label }}
+              <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">
+                ({{ b.count }})
+              </span>
+            </h2>
           </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <!-- Negative -->
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-[22px] font-bold leading-tight flex items-center gap-2">
-          <span class="w-2 h-6 rounded-full bg-red-500 block"></span>
-          Negative <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ negative|length }})</span>
-        </h2>
-      </div>
-      <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-          {% for game in negative %}
-            {% include "wishlist_card.html" with game=game accent="red" q=q owner=owner kind=kind %}
-          {% empty %}
-          <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
-            No items here yet.
+          <div id="bucket-{{ b.key }}" class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
+            {% include "partials/bucket_chunk.html" with bucket=b.key page_obj=b.page accent=b.accent q=q owner=owner kind=kind %}
           </div>
-        {% endfor %}
-      </div>
+        </div>
+      {% endfor %}
     </div>
   </div>
+
 </main>
 {% endblock %}

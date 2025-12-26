@@ -8,6 +8,19 @@ from django.core.paginator import Paginator
 
 from .models import BoardGame, UserGameStatus, Owner
 
+PAGE_SIZE = 10
+
+GREEN_BUCKETS = {
+    "WANT_TO_TRY",
+    "WANT_TO_PLAY_MORE",
+    "WANT_TO_BUY",
+    "BOUGHT",
+}
+RED_BUCKETS = {
+    "NOT_WANT_TO_TRY",
+    "NOT_WANT_TO_PLAY_MORE",
+}
+
 
 def home(request):
     # send logged-in users to wishlist, otherwise to login
@@ -84,7 +97,11 @@ def attach_owner_list(qs):
         out.append({"game": g, "owners_csv": owners_csv})
     return out
 
-def _filtered_games_queryset(q: str, owner: str, kind: str):
+def _base_filtered_games(request):
+    q = (request.GET.get("q") or "").strip()
+    owner = (request.GET.get("owner") or "").strip()
+    kind = (request.GET.get("kind") or "").strip()
+
     qs = BoardGame.objects.all()
 
     if owner:
@@ -100,59 +117,65 @@ def _filtered_games_queryset(q: str, owner: str, kind: str):
             Q(version_nickname__icontains=q)
         )
 
-    # Avoid duplicates from M2M join
-    return qs.distinct().prefetch_related("owners")
+    # important for M2M joins
+    qs = qs.distinct()
 
-@login_required
-def wishlist_not_tried_chunk(request):
-    q = (request.GET.get("q") or "").strip()
-    owner = (request.GET.get("owner") or "").strip()
-    kind = (request.GET.get("kind") or "").strip()
-    page_num = int(request.GET.get("page") or "1")
+    # load owners efficiently for "Available at: ..."
+    qs = qs.prefetch_related("owners")
 
-    games = _filtered_games_queryset(q, owner, kind)
+    return qs, q, owner, kind
 
-    status_qs = UserGameStatus.objects.filter(user=request.user).values("game_id", "status")
-    tried_ids = {x["game_id"] for x in status_qs}  # any status means tried
+def _bucket_queryset(games_qs, user, bucket: str):
+    """
+    bucket is one of:
+      - "NOT_TRIED" (special: no status row)
+      - any UserGameStatus.Status value
+    """
+    status_qs = UserGameStatus.objects.filter(user=user)
 
-    not_tried_qs = games.exclude(id__in=tried_ids).order_by("title")
-    paginator = Paginator(not_tried_qs, 10)
-    page = paginator.get_page(page_num)
+    if bucket == "NOT_TRIED":
+        tried_ids = status_qs.values_list("game_id", flat=True)
+        return games_qs.exclude(id__in=tried_ids)
 
-    return render(
-        request,
-        "partials/not_tried_chunk.html",
-        {
-            "not_tried_page": page,
-            "q": q,
-            "owner": owner,
-            "kind": kind,
-        },
-    )
+    # bucket is a real status
+    ids = status_qs.filter(status=bucket).values_list("game_id", flat=True)
+    return games_qs.filter(id__in=ids)
+
+def _bucket_accent(bucket: str) -> str:
+    if bucket in GREEN_BUCKETS:
+        return "green"
+    if bucket in RED_BUCKETS:
+        return "red"
+    return "primary"
 
 @login_required
 def wishlist_dashboard(request):
-    q = (request.GET.get("q") or "").strip()
-    owner = (request.GET.get("owner") or "").strip()
-    kind = (request.GET.get("kind") or "").strip()
-
-    games = _filtered_games_queryset(q, owner, kind)
-
-    # Only fetch IDs for positive/negative (small table)
-    status_qs = UserGameStatus.objects.filter(user=request.user).values("game_id", "status")
-    positive_ids = [x["game_id"] for x in status_qs if x["status"] == "POSITIVE"]
-    negative_ids = [x["game_id"] for x in status_qs if x["status"] == "NEGATIVE"]
-    tried_ids = set(positive_ids) | set(negative_ids)
-
-    positive = games.filter(id__in=positive_ids)#[:200]  # cap for safety
-    negative = games.filter(id__in=negative_ids)#[:200]
-
-    # First page of not-tried
-    not_tried_qs = games.exclude(id__in=tried_ids).order_by("title")
-    paginator = Paginator(not_tried_qs, 10)
-    page = paginator.get_page(1)
+    games_qs, q, owner, kind = _base_filtered_games(request)
 
     owners = Owner.objects.order_by("name").all()
+
+    buckets = [
+        {"key": "NOT_TRIED", "label": "Not tried yet"},
+        {"key": "WANT_TO_TRY", "label": "Want to try"},
+        {"key": "WANT_TO_PLAY_MORE", "label": "Want to play more"},
+        {"key": "WANT_TO_BUY", "label": "Want to buy"},
+        {"key": "BOUGHT", "label": "Bought"},
+        {"key": "NOT_WANT_TO_TRY", "label": "Not want to try"},
+        {"key": "NOT_WANT_TO_PLAY_MORE", "label": "Not want to play more"},
+    ]
+
+    # Initial page for each column
+    bucket_pages = {}
+    bucket_counts = {}
+
+    for bucket in buckets:
+        key = bucket["key"]
+        qs = _bucket_queryset(games_qs, request.user, key).order_by("id")
+        paginator = Paginator(qs, PAGE_SIZE)
+        page = paginator.get_page(1)
+        bucket["count"] = paginator.count
+        bucket["page"] = page
+        bucket["accent"] = _bucket_accent(key)
 
     return render(
         request,
@@ -162,29 +185,52 @@ def wishlist_dashboard(request):
             "owner": owner,
             "kind": kind,
             "owners": owners,
-            "positive": positive,
-            "negative": negative,
-            "not_tried_page": page,          # first 10
-            "not_tried_has_next": page.has_next(),
-            "not_tried_next_page": page.next_page_number() if page.has_next() else None,
+
+            "buckets": buckets,
+            "bucket_pages": bucket_pages,
+            "bucket_counts": bucket_counts,
         },
     )
+
+@login_required
+def wishlist_bucket_chunk(request, bucket: str):
+    # bucket is "NOT_TRIED" or one of status values
+    page_num = int(request.GET.get("page") or "1")
+
+    games_qs, q, owner, kind = _base_filtered_games(request)
+
+    qs = _bucket_queryset(games_qs, request.user, bucket).order_by("id")
+    paginator = Paginator(qs, PAGE_SIZE)
+    page = paginator.get_page(page_num)
+
+    return render(
+        request,
+        "partials/bucket_chunk.html",
+        {
+            "bucket": bucket,
+            "page_obj": page,
+            "accent": _bucket_accent(bucket),
+            "q": q,
+            "owner": owner,
+            "kind": kind,
+        },
+    )
+
+
 
 @login_required
 @require_POST
 def set_game_status(request, game_id: int):
     game = get_object_or_404(BoardGame, id=game_id)
-
     new_status = (request.POST.get("status") or "").strip()
 
-    if new_status == "NOT_TRIED":
+    if new_status == "CLEAR":
         UserGameStatus.objects.filter(user=request.user, game=game).delete()
-    elif new_status in {UserGameStatus.Status.POSITIVE, UserGameStatus.Status.NEGATIVE}:
+    elif new_status in dict(UserGameStatus.Status.choices):
         UserGameStatus.objects.update_or_create(
             user=request.user,
             game=game,
             defaults={"status": new_status},
         )
 
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/wishlist/"
-    return redirect(next_url)
+    return redirect(request.POST.get("next") or "wishlist")

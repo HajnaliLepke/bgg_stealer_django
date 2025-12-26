@@ -16,69 +16,114 @@
     {% endif %}
   </div>
 
-  <div class="flex flex-col gap-1">
-    <div class="flex justify-between items-start gap-2">
-      <div class="min-w-0">
-        <h3 class="text-lg font-bold leading-tight text-[#111418] dark:text-white truncate">
-          {{ game.title_local|default:game.title }}
-        </h3>
-        <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1 flex flex-wrap gap-x-2 gap-y-1">
-          {% comment %} <span class="inline-flex items-center gap-1"> {% endcomment %}
-            {% if game.owners.all %}
-            <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1">
-                Available at:
-                {% for o in game.owners.all %}
-                {{ o.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
+    <div class="flex flex-col gap-1">
+    <!-- Title area becomes the positioning context -->
+    <div class="relative">
+        <!-- Buttons overlayed over the title line -->
+        <div class="absolute top-0 right-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center gap-1 rounded-xl bg-white/80 dark:bg-black/40 backdrop-blur-sm p-1 ring-1 ring-black/5 dark:ring-white/10">
+            {# Want to try #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="WANT_TO_TRY">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to try">
+                <span class="material-symbols-outlined text-[20px]">emoji_objects</span>
+            </button>
+            </form>
 
-          {% comment %} </span> {% endcomment %}
-          {% if game.version_nickname %}
-            <span class="inline-flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">sell</span>{{ game.version_nickname }}
-            </span>
-          {% endif %}
-          {% if game.objectid %}
-            <span class="inline-flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">tag</span>BGG {{ game.objectid }}
-            </span>
-          {% endif %}
+            {# Want to play more #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="WANT_TO_PLAY_MORE">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to play more">
+                <span class="material-symbols-outlined text-[20px]">replay</span>
+            </button>
+            </form>
+
+            {# Want to buy #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="WANT_TO_BUY">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Want to buy">
+                <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+            </button>
+            </form>
+
+            {# Bought #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="BOUGHT">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Bought">
+                <span class="material-symbols-outlined text-[20px]">check_circle</span>
+            </button>
+            </form>
+
+            {# Not want to try #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="NOT_WANT_TO_TRY">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to try">
+                <span class="material-symbols-outlined text-[20px]">block</span>
+            </button>
+            </form>
+
+            {# Not want to play more #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="NOT_WANT_TO_PLAY_MORE">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Not want to play more">
+                <span class="material-symbols-outlined text-[20px]">thumb_down</span>
+            </button>
+            </form>
+
+            {# Clear #}
+            <form method="post" action="{% url 'wishlist_set_status' game.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="CLEAR">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10" title="Clear status">
+                <span class="material-symbols-outlined text-[20px]">undo</span>
+            </button>
+            </form>
         </div>
-      </div>
+        </div>
 
-      <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
-        <!-- Positive -->
-        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="POSITIVE">
-          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
-          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-green-500/20" title="Mark Positive">
-            <span class="material-symbols-outlined text-[20px]">thumb_up</span>
-          </button>
-        </form>
+        <!-- Give the title right padding so it doesn't hide under the buttons -->
+        <h3 class="text-lg font-bold leading-tight text-[#111418] dark:text-white w-full ">
+        {{ game.title_local|default:game.title }}
+        </h3>
 
-        <!-- Negative -->
-        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="NEGATIVE">
-          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
-          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-red-500/20" title="Mark Negative">
-            <span class="material-symbols-outlined text-[20px]">thumb_down</span>
-          </button>
-        </form>
-
-        <!-- Undo / back to Not Tried -->
-        <form method="post" action="{% url 'wishlist_set_status' game.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="status" value="NOT_TRIED">
-          <input type="hidden" name="next" value="{% url 'wishlist' %}{% if q or owner or kind %}?{% if q %}q={{ q|urlencode }}&{% endif %}{% if owner %}owner={{ owner|urlencode }}&{% endif %}{% if kind %}kind={{ kind|urlencode }}{% endif %}{% endif %}">
-          <button type="submit" class="rounded-lg p-2 text-[#637588] dark:text-[#92adc9] hover:text-white hover:bg-white/10" title="Move back to Not Tried">
-            <span class="material-symbols-outlined text-[20px]">undo</span>
-          </button>
-        </form>
-      </div>
+        {% if game.owners.all %}
+        <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1">
+            Available at:
+            {% for o in game.owners.all %}
+            {{ o.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
+
+    <!-- your meta lines (version/bgg id) can stay below -->
+    <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1 flex flex-wrap gap-x-2 gap-y-1">
+        {% if game.version_nickname %}
+        <span class="inline-flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">sell</span>{{ game.version_nickname }}
+        </span>
+        {% endif %}
+        {% if game.objectid %}
+        <span class="inline-flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">tag</span>BGG {{ game.objectid }}
+        </span>
+        {% endif %}
+    </div>
+
+
 
     <div class="flex flex-wrap items-center gap-2 mt-2">
       {% if game.kind == "EXPANSION" %}
