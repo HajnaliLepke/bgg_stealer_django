@@ -24,9 +24,12 @@
         </h3>
         <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1 flex flex-wrap gap-x-2 gap-y-1">
           {% comment %} <span class="inline-flex items-center gap-1"> {% endcomment %}
-            {% if owners_csv %}
+            {% if game.owners.all %}
             <div class="text-xs text-[#637588] dark:text-[#92adc9] mt-1">
-                Available at: {{ owners_csv }}
+                Available at:
+                {% for o in game.owners.all %}
+                {{ o.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
             </div>
             {% endif %}
 

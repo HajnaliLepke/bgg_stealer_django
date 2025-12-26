@@ -47,7 +47,14 @@ class BoardGame(models.Model):
     class Meta:
         constraints = [
             # One row per unique “game version”
-            models.UniqueConstraint(fields=["objectid", "title"], name="uniq_objectid_version"),
+            models.UniqueConstraint(fields=["objectid", "title"], name="uniq_objectid_title"),
+        ]
+
+        indexes = [
+            models.Index(fields=["objectid"]),
+            models.Index(fields=["kind"]),
+            models.Index(fields=["title"]),
+            models.Index(fields=["title_local"]),
         ]
 
     def __str__(self) -> str:
@@ -62,6 +69,10 @@ class OwnerInventory(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["owner", "game"], name="uniq_owner_game"),
+        ]
+        indexes = [
+            models.Index(fields=["owner", "game"]),
+            models.Index(fields=["game", "owner"]),
         ]
 
 

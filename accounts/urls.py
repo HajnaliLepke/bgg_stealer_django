@@ -9,4 +9,5 @@ urlpatterns = [
 
     path("wishlist/", views.wishlist_dashboard, name="wishlist"),
     path("wishlist/<int:game_id>/set-status/", views.set_game_status, name="wishlist_set_status"),
+    path("wishlist/not-tried/", views.wishlist_not_tried_chunk, name="wishlist_not_tried_chunk"),
 ]

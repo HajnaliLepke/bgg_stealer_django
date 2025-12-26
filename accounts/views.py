@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
 from django.db.models import Q
+from django.core.paginator import Paginator
 
 from .models import BoardGame, UserGameStatus, Owner
 
@@ -83,45 +84,75 @@ def attach_owner_list(qs):
         out.append({"game": g, "owners_csv": owners_csv})
     return out
 
+def _filtered_games_queryset(q: str, owner: str, kind: str):
+    qs = BoardGame.objects.all()
+
+    if owner:
+        qs = qs.filter(owners__slug=owner)
+
+    if kind:
+        qs = qs.filter(kind=kind)
+
+    if q:
+        qs = qs.filter(
+            Q(title__icontains=q) |
+            Q(title_local__icontains=q) |
+            Q(version_nickname__icontains=q)
+        )
+
+    # Avoid duplicates from M2M join
+    return qs.distinct().prefetch_related("owners")
+
+@login_required
+def wishlist_not_tried_chunk(request):
+    q = (request.GET.get("q") or "").strip()
+    owner = (request.GET.get("owner") or "").strip()
+    kind = (request.GET.get("kind") or "").strip()
+    page_num = int(request.GET.get("page") or "1")
+
+    games = _filtered_games_queryset(q, owner, kind)
+
+    status_qs = UserGameStatus.objects.filter(user=request.user).values("game_id", "status")
+    tried_ids = {x["game_id"] for x in status_qs}  # any status means tried
+
+    not_tried_qs = games.exclude(id__in=tried_ids).order_by("title")
+    paginator = Paginator(not_tried_qs, 10)
+    page = paginator.get_page(page_num)
+
+    return render(
+        request,
+        "partials/not_tried_chunk.html",
+        {
+            "not_tried_page": page,
+            "q": q,
+            "owner": owner,
+            "kind": kind,
+        },
+    )
+
 @login_required
 def wishlist_dashboard(request):
     q = (request.GET.get("q") or "").strip()
     owner = (request.GET.get("owner") or "").strip()
     kind = (request.GET.get("kind") or "").strip()
 
-    games = BoardGame.objects.all()
-    games = games.prefetch_related("owners")
+    games = _filtered_games_queryset(q, owner, kind)
 
+    # Only fetch IDs for positive/negative (small table)
+    status_qs = UserGameStatus.objects.filter(user=request.user).values("game_id", "status")
+    positive_ids = [x["game_id"] for x in status_qs if x["status"] == "POSITIVE"]
+    negative_ids = [x["game_id"] for x in status_qs if x["status"] == "NEGATIVE"]
+    tried_ids = set(positive_ids) | set(negative_ids)
 
-    if owner:
-        games = games.filter(owners__slug=owner)
+    positive = games.filter(id__in=positive_ids)#[:200]  # cap for safety
+    negative = games.filter(id__in=negative_ids)#[:200]
 
-    if kind:
-        games = games.filter(kind=kind)
+    # First page of not-tried
+    not_tried_qs = games.exclude(id__in=tried_ids).order_by("title")
+    paginator = Paginator(not_tried_qs, 10)
+    page = paginator.get_page(1)
 
-    if q:
-        games = games.filter(
-            Q(title__icontains=q) |
-            Q(title_local__icontains=q) |
-            Q(version_nickname__icontains=q)
-        )
-
-    # statuses for this user
-    status_qs = UserGameStatus.objects.filter(user=request.user).select_related("game")
-
-    positive_ids = set(status_qs.filter(status=UserGameStatus.Status.POSITIVE).values_list("game_id", flat=True))
-    negative_ids = set(status_qs.filter(status=UserGameStatus.Status.NEGATIVE).values_list("game_id", flat=True))
-    tried_ids = positive_ids | negative_ids
-
-    positive = games.filter(id__in=positive_ids)
-    negative = games.filter(id__in=negative_ids)
-    not_tried = games.exclude(id__in=tried_ids)
-
-    not_tried = attach_owner_list(not_tried)
-    positive = attach_owner_list(positive)
-    negative = attach_owner_list(negative)
-
-    owners = Owner.objects.order_by("name").values_list("name", flat=True).distinct()
+    owners = Owner.objects.order_by("name").all()
 
     return render(
         request,
@@ -131,13 +162,13 @@ def wishlist_dashboard(request):
             "owner": owner,
             "kind": kind,
             "owners": owners,
-
-            "not_tried": not_tried,
             "positive": positive,
             "negative": negative,
+            "not_tried_page": page,          # first 10
+            "not_tried_has_next": page.has_next(),
+            "not_tried_next_page": page.next_page_number() if page.has_next() else None,
         },
     )
-
 
 @login_required
 @require_POST

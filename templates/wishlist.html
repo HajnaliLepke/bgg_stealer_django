@@ -69,9 +69,9 @@
         onchange="this.form.submit()"
       >
         <option value="">All owners</option>
-        {% for o in owners %}
-          <option value="{{ o }}" {% if o == owner %}selected{% endif %}>{{ o }}</option>
-        {% endfor %}
+          {% for o in owners %}
+            <option value="{{ o.slug }}" {% if o.slug == owner %}selected{% endif %}>{{ o.name }}</option>
+          {% endfor %}
       </select>
     </form>
   </div>
@@ -82,17 +82,11 @@
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between px-1">
         <h2 class="text-[22px] font-bold leading-tight">
-          Not Tried Yet <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ not_tried|length }})</span>
+          Not Tried Yet <span class="text-[#637588] dark:text-[#92adc9] text-lg font-medium ml-1">({{ not_tried_page.paginator.count }})</span>
         </h2>
       </div>
-      <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-          {% for row in not_tried %}
-            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="primary" q=q owner=owner kind=kind %}
-          {% empty %}
-          <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
-            No items here yet.
-          </div>
-        {% endfor %}
+      <div id="not-tried-list"  class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
+            {% include "partials/not_tried_chunk.html" with not_tried_page=not_tried_page not_tried_has_next=not_tried_has_next not_tried_next_page=not_tried_next_page q=q owner=owner kind=kind %}
       </div>
     </div>
 
@@ -105,8 +99,8 @@
         </h2>
       </div>
       <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-          {% for row in positive %}
-            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="green" q=q owner=owner kind=kind %}
+          {% for game in positive %}
+            {% include "wishlist_card.html" with game=game accent="green" q=q owner=owner kind=kind %}
           {% empty %}
           <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
             No items here yet.
@@ -124,8 +118,8 @@
         </h2>
       </div>
       <div class="flex flex-col gap-4 min-h-[200px] p-2 -m-2">
-          {% for row in negative %}
-            {% include "wishlist_card.html" with game=row.game owners_csv=row.owners_csv accent="red" q=q owner=owner kind=kind %}
+          {% for game in negative %}
+            {% include "wishlist_card.html" with game=game accent="red" q=q owner=owner kind=kind %}
           {% empty %}
           <div class="rounded-xl border border-dashed border-[#e5e7eb] dark:border-[#233648] p-6 text-sm text-[#637588] dark:text-[#92adc9]">
             No items here yet.
