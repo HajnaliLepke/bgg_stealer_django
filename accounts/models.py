@@ -39,7 +39,7 @@ class BoardGame(models.Model):
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.OTHER)
 
     # Optional
-    image_url = models.URLField(blank=True, default="")
+    image_url = models.URLField(blank=True, default="", null=True)
 
     # Availability (many owners)
     owners = models.ManyToManyField(Owner, through="OwnerInventory", related_name="games")
@@ -47,7 +47,7 @@ class BoardGame(models.Model):
     class Meta:
         constraints = [
             # One row per unique “game version”
-            models.UniqueConstraint(fields=["objectid", "title"], name="uniq_objectid_title"),
+            models.UniqueConstraint(fields=["objectid"], name="uniq_objectid"),
         ]
 
         indexes = [

@@ -15,7 +15,7 @@ from typing import Optional, Dict, List
 import django
 import requests
 import xml.etree.ElementTree as ET
-
+from django.db import transaction, IntegrityError
 
 # ----------------------------
 # Models (type safety)
@@ -179,7 +179,7 @@ def _text_strip(el: Optional[ET.Element]) -> Optional[str]:
 # ----------------------------
 def fetch_bgg_user_collection(username: str, *, tries: int = 5, sleep_seconds: float = 1.0) -> Optional[str]:
     url = "https://boardgamegeek.com/xmlapi2/collection"
-    params = {"username": str(username)}
+    params = {"username": str(username),"version":"1"}
     headers = {
         "User-Agent": "gamekeep-import/1.0 (personal project)",
         "Authorization": f"Bearer {BGG_TOKEN}",
@@ -268,12 +268,14 @@ def fetch_bgg_thing_details(game: OwnedGameRef, *, tries: int = 5, sleep_seconds
         primary_name = None
         for name_el in item.findall("name"):
             if name_el.get("type") == "primary":
-                primary_name = name_el.get("value")
-                break
+                primary_name = name_el.get("value")    
+                break            
 
         image = _text_strip(item.find("image"))
 
         year = _to_int(item.find("yearpublished").get("value")) if item.find("yearpublished") is not None else None
+        if year < 0:
+            year = 0
         minp = _to_int(item.find("minplayers").get("value")) if item.find("minplayers") is not None else None
         maxp = _to_int(item.find("maxplayers").get("value")) if item.find("maxplayers") is not None else None
         minpt = _to_int(item.find("minplaytime").get("value")) if item.find("minplaytime") is not None else None
@@ -348,50 +350,74 @@ def parse_bgg_collection(xml_text: str, username: str, games: Dict[str, OwnedGam
                 username, scanned, added, updated, len(games))
     return games
 
+def load_games_final_from_json(path: str) -> Dict[str, GameDetails]:
+    with open(path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    games: Dict[str, GameDetails] = {}
+    for objectid, payload in raw.items():
+        # payload is the dict created by asdict(GameDetails)
+        # ensure objectid key is correct even if missing in payload
+        payload.setdefault("objectid", objectid)
+        games[objectid] = GameDetails(**payload)
+
+    return games
 
 # ----------------------------
 # Main
 # ----------------------------
 
-def upload_bgg_games(owners: List[str], save_to_json: bool = False) -> None:
+def upload_bgg_games(owners: List[str], save_to_json: bool = False,use_cached_json: bool = False, cache_path: str = "bgg_everything.json") -> None:
     games_simple: Dict[str, OwnedGameRef] = {}
     games_final: Dict[str, GameDetails] = {}
 
-    with Timer("TOTAL OPERATION"):
-        # Per-owner
-        for o in owners:
-            with Timer(f"OWNER {o} (collection+parse)"):
-                logger.info("owner=%s | start", o)
+    # ✅ new: load cache if requested
+    if use_cached_json:
+        try:
+            with Timer(f"LOAD CACHE {cache_path}"):
+                games_final = load_games_final_from_json(cache_path)
+            logger.info("cache loaded | games=%d | path=%s", len(games_final), cache_path)
+        except FileNotFoundError:
+            logger.warning("cache requested but file not found | path=%s | falling back to fetch", cache_path)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.warning("cache requested but invalid | path=%s | err=%s | falling back to fetch", cache_path, e)
 
-                time.sleep(1)
-                xml_text = fetch_bgg_user_collection(o)
-                time.sleep(1)
+    # If cache not used or failed to load, fetch from BGG
+    if not games_final:
+        with Timer("TOTAL OPERATION"):
+            # Per-owner
+            for o in owners:
+                with Timer(f"OWNER {o} (collection+parse)"):
+                    logger.info("owner=%s | start", o)
 
-                if not xml_text:
-                    logger.error("owner=%s | collection fetch failed; skipping", o)
-                    continue
+                    time.sleep(2)
+                    xml_text = fetch_bgg_user_collection(o)
+                    time.sleep(2)
 
-                games_simple = parse_bgg_collection(xml_text, o, games_simple)
+                    if not xml_text:
+                        logger.error("owner=%s | collection fetch failed; skipping", o)
+                        continue
 
-                logger.info("owner=%s | end", o)
+                    games_simple = parse_bgg_collection(xml_text, o, games_simple)
 
-        logger.info("collection phase done | unique owned games=%d", len(games_simple))
+                    logger.info("owner=%s | end", o)
 
-        # Per-game details
-        for objectid, gref in list(games_simple.items()):
-            with Timer(f"THING {objectid} (fetch+parse)"):
-                logger.info("thing=%s | start | owners=%s", objectid, gref.owners)
+            logger.info("collection phase done | unique owned games=%d", len(games_simple))
 
-                time.sleep(2)
-                details = fetch_bgg_thing_details(gref)
+            # Per-game details
+            for objectid, gref in list(games_simple.items()):
+                with Timer(f"THING {objectid} (fetch+parse)"):
+                    logger.info("thing=%s | start | owners=%s", objectid, gref.owners)
 
-                if details is None:
-                    logger.error("thing=%s | failed; skipping enrichment", objectid)
-                    continue
+                    time.sleep(2)
+                    details = fetch_bgg_thing_details(gref)
 
-                games_final[objectid] = details
-                logger.info("thing=%s | end", objectid)
-                break
+                    if details is None:
+                        logger.error("thing=%s | failed; skipping enrichment", objectid)
+                        continue
+
+                    games_final[objectid] = details
+                    logger.info("thing=%s | end", objectid)
 
     # Save JSON (final)
     if save_to_json:
@@ -409,7 +435,7 @@ def upload_bgg_games(owners: List[str], save_to_json: bool = False) -> None:
     created = 0
     updated = 0
     for objectid, object in games_final.items():
-        with Timer(f"THING {objectid}:{object.name} (django create)"):
+        with Timer(f"THING {objectid}:{object.primary_name} (django create)"):
 
             defaults_for_game = {
                 "title_local": (object.name or "").strip(),
@@ -431,11 +457,21 @@ def upload_bgg_games(owners: List[str], save_to_json: bool = False) -> None:
             }
 
 
-            game, was_created = BoardGame.objects.update_or_create(
-                objectid=objectid,
-                title=object.name,
-                defaults=defaults_for_game,
-            )
+            try:
+                with transaction.atomic():
+                    game, was_created = BoardGame.objects.update_or_create(
+                        objectid=objectid,          # ✅ lookup ONLY by objectid
+                        defaults=defaults_for_game,
+                    )
+            except IntegrityError:
+                # Safety net: if legacy duplicates exist, pick the first and update it.
+                game = BoardGame.objects.filter(objectid=objectid).order_by("id").first()
+                if game is None:
+                    raise
+                for k, v in defaults_for_game.items():
+                    setattr(game, k, v)
+                game.save()
+                was_created = False
             for owner in object.owners.split(","):
                 owner_obj, _ = Owner.objects.get_or_create(
                     slug=owner,
@@ -452,4 +488,5 @@ def upload_bgg_games(owners: List[str], save_to_json: bool = False) -> None:
                 created, updated, len(games_final))
 
 owners: List[str] = ["Boardgamebudapest", "gemklub_corvin", "jatszma_kavezo", "jatszohazprojekt"]
-upload_bgg_games(owners,True)
+# upload_bgg_games(owners,save_to_json=True)
+upload_bgg_games(owners, use_cached_json=True, cache_path="bgg_everything.json")
